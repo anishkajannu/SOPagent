@@ -69,14 +69,19 @@ body {
   text-decoration: none; white-space: nowrap;
 }
 
-/* ---- draft panel ---- */
-.draft-panel {
-  max-width: 900px; width: 100%; margin: 0 auto; padding: 10px 24px;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  border-top: 1px solid var(--line); background: #fff;
+/* ---- inline draft card (appears in the conversation, under the answer) ---- */
+.draft-card {
+  border: 1px solid var(--sop-bd); background: var(--sop-bg);
+  border-radius: 14px; padding: 14px 16px; max-width: 80%;
+  animation: pop-in .28s ease-out;
 }
-.draft-ready::before { content: '✅ Draft ready'; font-weight: 600; }
-.draft-hint { color: var(--muted); font-size: .85rem; }
+.draft-card-head { font-size: .96rem; margin-bottom: 10px; color: #14532d; }
+.draft-card-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.draft-card-hint { color: var(--muted); font-size: .82rem; margin-top: 8px; }
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  to   { opacity: 1; transform: none; }
+}
 
 /* ---- composer ---- */
 .composer {

@@ -236,16 +236,13 @@ def _definition(doc, label, text):
 def _render_hier(doc, items, major):
     """Render a section (5=Responsibilities, 6=Procedure) with sub-subsections.
 
-    Each item may be a plain string (renders as `major.i`) or a dict with a
-    heading (`role`/`step`) plus a list of sub-items (`duties`/`substeps`),
-    which render as `major.i.j`.
+    `items` is already normalized by _as_hier_items: each entry is either a
+    {'head', 'subs'} dict (renders as major.i + major.i.j) or a plain string.
     """
     for i, item in enumerate(items or ["[None]"], start=1):
         if isinstance(item, dict):
-            head = (item.get("role") or item.get("step") or "").strip()
-            subs = item.get("duties") or item.get("substeps") or []
-            _num_clause(doc, f"{major}.{i}", head)
-            for j, sub in enumerate(subs, start=1):
+            _num_clause(doc, f"{major}.{i}", item.get("head", ""))
+            for j, sub in enumerate(item.get("subs", []), start=1):
                 _num_clause(doc, f"{major}.{i}.{j}", str(sub).strip(), level=1)
         else:
             _num_clause(doc, f"{major}.{i}", str(item).strip())
@@ -266,6 +263,77 @@ def _clean_title(title: str) -> str:
     title = re.sub(r"^\s*title\s*:\s*", "", title, flags=re.I)
     title = _TITLE_PREFIX.sub("", title)
     return title.strip()
+
+
+# ---------- input normalization (make rendering robust to model quirks) ----------
+# The model's structured output SHOULD give lists, but it sometimes returns a single
+# string (occasionally wrapped in <item>…</item> tags). Iterating a string yields one
+# character per line — the "201-page" bug. These coerce any shape into clean lists.
+_MAX_ITEMS = 60      # a real SOP section never has more than this; guards runaway output
+_MAX_SUBS = 40
+
+
+def _coerce_text(v) -> str:
+    """One entry -> a single display string (handles str or a {term/meaning}-style dict)."""
+    if isinstance(v, dict):
+        term = v.get("term") or v.get("name") or v.get("role") or v.get("step") or ""
+        meaning = (v.get("meaning") or v.get("definition") or v.get("description")
+                   or v.get("text") or "")
+        if term and meaning:
+            return f"{term} — {meaning}"
+        return (term or meaning or " ".join(str(x) for x in v.values())).strip()
+    return str(v).strip()
+
+
+def _as_str_list(value) -> list[str]:
+    """Coerce definitions/references into a clean list of strings."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return []
+        tagged = re.findall(r"<item>(.*?)</item>", s, flags=re.S | re.I)
+        if tagged:
+            items = [t.strip() for t in tagged if t.strip()]
+        else:
+            s = re.sub(r"</?item>", "\n", s, flags=re.I)          # strip stray tags
+            items = [re.sub(r"^[\s\-•*]+", "", p).strip() for p in re.split(r"[\n;]+", s)]
+            items = [p for p in items if p] or [s]
+        return items[:_MAX_ITEMS]
+    if isinstance(value, list):
+        out = [t for t in (_coerce_text(v) for v in value) if t]
+        return out[:_MAX_ITEMS]
+    return [str(value).strip()]
+
+
+def _as_hier_items(value, head_key: str, sub_key: str) -> list:
+    """Coerce responsibilities/procedure into a list of {head, subs} dicts or plain strings."""
+    if value is None:
+        return []
+    if isinstance(value, str):
+        return _as_str_list(value)          # a bare string -> flat string items (never chars)
+    if isinstance(value, dict):
+        value = [value]
+    if not isinstance(value, list):
+        return [str(value).strip()]
+    out = []
+    for item in value[:_MAX_ITEMS]:
+        if isinstance(item, dict):
+            subs_raw = item.get(sub_key) or item.get("duties") or item.get("substeps") or []
+            if isinstance(subs_raw, str):
+                subs = _as_str_list(subs_raw)
+            elif isinstance(subs_raw, list):
+                subs = [t for t in (_coerce_text(s) for s in subs_raw) if t][:_MAX_SUBS]
+            else:
+                subs = []
+            head = (item.get(head_key) or item.get("role") or item.get("step") or "").strip()
+            out.append({"head": head, "subs": subs})
+        else:
+            t = _coerce_text(item)
+            if t:
+                out.append(t)
+    return out
 
 
 def build_sop_docx(doc_number, draft, out_path, base_dir=".", version="01", effective="[On approval]"):
@@ -292,18 +360,18 @@ def build_sop_docx(doc_number, draft, out_path, base_dir=".", version="01", effe
     _body(doc, draft.get("scope", "").strip())
 
     _section_heading(doc, 3, "REFERENCES")
-    for ref in draft.get("references", []) or ["[None]"]:
-        _reference(doc, ref.strip())
+    for ref in _as_str_list(draft.get("references")) or ["[None]"]:
+        _reference(doc, ref)
 
     _section_heading(doc, 4, "DEFINITIONS")
-    for i, d in enumerate(draft.get("definitions", []) or ["[None]"], start=1):
-        _definition(doc, f"4.{i}", d.strip())
+    for i, d in enumerate(_as_str_list(draft.get("definitions")) or ["[None]"], start=1):
+        _definition(doc, f"4.{i}", d)
 
     _section_heading(doc, 5, "RESPONSIBILITIES")
-    _render_hier(doc, draft.get("responsibilities", []), 5)
+    _render_hier(doc, _as_hier_items(draft.get("responsibilities"), "role", "duties"), 5)
 
     _section_heading(doc, 6, "PROCEDURE")
-    _render_hier(doc, draft.get("procedure", []), 6)
+    _render_hier(doc, _as_hier_items(draft.get("procedure"), "step", "substeps"), 6)
 
     rp = doc.add_paragraph(); rp.paragraph_format.space_before = Pt(12)
     _add_run(rp, "REVISION HISTORY", bold=True)

@@ -84,8 +84,6 @@ const chatEl = document.getElementById("chat");
 const formEl = document.getElementById("chat-form");
 const inputEl = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
-const draftPanel = document.getElementById("draft-panel");
-const draftDownload = document.getElementById("draft-download");
 
 function addBubble(role) {
   const wrap = document.createElement("div");
@@ -106,7 +104,6 @@ formEl.addEventListener("submit", async (e) => {
   if (!message) return;
   inputEl.value = "";
   sendBtn.disabled = true;
-  draftPanel.hidden = true;
 
   addBubble("user").textContent = message;
 
@@ -168,9 +165,26 @@ function escapeHtml(s) {
 }
 
 function showDraft(name) {
-  draftPanel.querySelector(".draft-ready").textContent = " " + name.replace(/\.docx$/, "");
-  draftDownload.href = "/api/sops/download?name=" + encodeURIComponent(name);
-  draftPanel.hidden = false;
+  // Drop a download card right into the conversation, under the answer.
+  const wrap = document.createElement("div");
+  wrap.className = "msg assistant";
+  const card = document.createElement("div");
+  card.className = "draft-card";
+  const title = name.replace(/\.docx$/, "");
+  const url = "/api/sops/download?name=" + encodeURIComponent(name);
+  card.innerHTML =
+    `<div class="draft-card-head">✅ <strong>Draft ready</strong> — ${escapeHtml(title)}</div>`
+    + `<div class="draft-card-actions">`
+    + `<a class="btn primary" href="${url}" download>⬇️ Download Word (.docx)</a>`
+    + `<button type="button" class="btn" id="view-lib-btn">📄 View in SOP Library</button>`
+    + `</div>`
+    + `<div class="draft-card-hint">Also pinned at the top of the SOP Library, with full formatting.</div>`;
+  wrap.appendChild(card);
+  chatEl.appendChild(wrap);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  card.querySelector("#view-lib-btn").addEventListener("click", () => {
+    document.querySelector('.tab[data-tab="library"]').click();
+  });
   if (document.querySelector('.tab[data-tab="library"]').classList.contains("active")) loadLibrary();
 }
 
