@@ -1,9 +1,10 @@
+
 from pathlib import Path
 
 from langchain.agents import create_agent
 from langchain.tools import tool
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from generate import generate_sop
@@ -11,7 +12,7 @@ from gov import search_government_policy
 from ingest import load_doc, build_stable_ids
 
 
-embeddings = HuggingFaceEmbeddings(
+embeddings = FastEmbedEmbeddings(
     model_name="sentence-transformers/all-MiniLM-L6-v2"
 )
 

@@ -14,9 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the application (see .dockerignore for what's left out).
 COPY . .
 
-# Bake the local embedding model into the image so there's no download at runtime.
-RUN python -c "from sentence_transformers import SentenceTransformer; \
-SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
+# Bake the lightweight ONNX embedding model into the image (no download at runtime).
+RUN python -c "from langchain_community.embeddings import FastEmbedEmbeddings; \
+FastEmbedEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2').embed_query('warmup')"
 
 # Build the SOP search index from ./sops at build time.
 RUN python ingest.py

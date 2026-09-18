@@ -17,7 +17,7 @@ from typing import TypedDict
 
 from langchain.chat_models import init_chat_model
 from langchain_chroma import Chroma
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 
 from sop_docx import build_sop_docx, _clean_title
 
@@ -71,7 +71,7 @@ def next_doc_number(doc_type: str = "SOP", sops_dir: Path = SOPS_DIR) -> str:
 
 def related_context(topic: str, k: int = 4) -> str:
     """Pull related passages from the existing SOP store so tone and cross-references match."""
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = FastEmbedEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     store = Chroma(
         collection_name="netramind_sops",
         embedding_function=embeddings,

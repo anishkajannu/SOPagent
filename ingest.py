@@ -22,7 +22,7 @@ from pathlib import Path
 
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 OFFICIAL_PATTERN = re.compile(
@@ -134,7 +134,7 @@ def main() -> None:
     chunks = splitter.split_documents(docs)
     ids = build_stable_ids(chunks)
 
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    embeddings = FastEmbedEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     sop_store = Chroma(
         collection_name="netramind_sops",
         embedding_function=embeddings,

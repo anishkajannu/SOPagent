@@ -1,11 +1,12 @@
 langchain
 langchain-anthropic
 langchain-chroma
-langchain-huggingface
+langchain-community
 langchain-text-splitters
 langchain-core
-sentence-transformers
 chromadb
+# Lightweight ONNX embeddings (same MiniLM model, no PyTorch — low memory):
+fastembed
 # Reading Word and PDF SOPs during ingest:
 pdfplumber
 python-docx
