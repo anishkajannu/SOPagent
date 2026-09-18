@@ -23,6 +23,7 @@ from docx.shared import Inches, Pt, RGBColor
 FONT = "Calibri"
 SIZE = 11
 GREY = "D9D9D9"
+BLACK = RGBColor(0x00, 0x00, 0x00)        # force true black (ignore theme text colour)
 RED = RGBColor(0xC0, 0x00, 0x00)          # internal cross-reference color
 LOGO_CANDIDATES = ["netramind_logo.png", "assets/netramind_logo.png"]
 
@@ -39,8 +40,8 @@ def _font(run, size=SIZE, bold=False, italic=False, underline=False, color=None)
     run.bold = bold
     run.italic = italic
     run.underline = underline
-    if color is not None:
-        run.font.color.rgb = color
+    # Default every run to true black so nothing inherits a grey theme text colour.
+    run.font.color.rgb = color if color is not None else BLACK
     rpr = run._element.get_or_add_rPr()
     rfonts = rpr.find(qn("w:rFonts"))
     if rfonts is None:
@@ -88,6 +89,25 @@ def _shade(cell, fill=GREY):
     tcPr.append(shd)
 
 
+def _fixed_layout(table):
+    """Lock column widths so Word honours them exactly (no auto-resize / clipping)."""
+    tblPr = table._tbl.tblPr
+    layout = OxmlElement("w:tblLayout")
+    layout.set(qn("w:type"), "fixed")
+    tblPr.append(layout)
+
+
+def _zero_cell_margins(table):
+    """Remove a table's internal cell padding (keeps a nested table from overflowing)."""
+    tblPr = table._tbl.tblPr
+    mar = OxmlElement("w:tblCellMar")
+    for side in ("top", "start", "bottom", "end", "left", "right"):
+        el = OxmlElement(f"w:{side}")
+        el.set(qn("w:w"), "0"); el.set(qn("w:type"), "dxa")
+        mar.append(el)
+    tblPr.append(mar)
+
+
 def _cell_text(cell, text, bold=False, align=None, shade=False, size=SIZE):
     cell.text = ""
     p = cell.paragraphs[0]
@@ -112,22 +132,25 @@ def _find_logo(base: Path):
 def _build_header(section, doc_number, title, version, effective, logo):
     header = section.header
     header.is_linked_to_previous = False
-    outer = header.add_table(rows=1, cols=2, width=Inches(6.5))
+    outer = header.add_table(rows=1, cols=2, width=Inches(6.4))
     outer.autofit = False
+    _fixed_layout(outer)
+    _zero_cell_margins(outer)          # so the nested meta table isn't pushed off the page
     logo_cell, meta_cell = outer.rows[0].cells
-    logo_cell.width = Inches(2.7); meta_cell.width = Inches(3.8)
+    logo_cell.width = Inches(2.6); meta_cell.width = Inches(3.8)
     logo_cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER  # center against the table
 
     lp = logo_cell.paragraphs[0]
     if logo is not None:
-        lp.add_run().add_picture(str(logo), width=Inches(2.4))  # fits inside the 2.7" cell
+        lp.add_run().add_picture(str(logo), width=Inches(2.4))  # fits inside the 2.6" cell
     else:
         _add_run(lp, "NetraMind", bold=True, size=16, color=RGBColor(0x1A, 0x56, 0xDB))
 
     meta = meta_cell.add_table(rows=5, cols=2)
     meta.autofit = False
+    _fixed_layout(meta)
     for row in meta.rows:
-        row.cells[0].width = Inches(1.5); row.cells[1].width = Inches(2.3)  # 3.8" total, fits meta_cell
+        row.cells[0].width = Inches(1.5); row.cells[1].width = Inches(2.2)  # 3.7" total, slack inside 3.8"
     _set_table_borders(meta)
     meta.rows[0].cells[0].merge(meta.rows[0].cells[1])
     _cell_text(meta.rows[0].cells[0], "STANDARD OPERATING PROCEDURE",
@@ -143,8 +166,8 @@ def _build_header(section, doc_number, title, version, effective, logo):
             _cell_text(meta.rows[i].cells[1], value)
 
     tp = header.add_paragraph()
-    _add_run(tp, "Title: ", bold=True)
-    _add_run(tp, title, bold=True)
+    _add_run(tp, "Title: ", bold=True, color=BLACK)
+    _add_run(tp, title, bold=True, color=BLACK)
 
 
 def _build_footer(section):
