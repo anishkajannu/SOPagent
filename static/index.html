@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Netramind SOP Assistant</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Markdown rendering for assistant answers (vendored locally — no external CDN,
+       so it works on locked-down networks) -->
+  <script src="/static/marked.min.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">📘 <span>Netramind SOP Assistant</span></div>
+    <div class="tagline">Ask about your SOPs, draft new ones, or look up official regulations.</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="assistant">💬 Assistant</button>
+    <button class="tab" data-tab="library">📄 SOP Library</button>
+  </nav>
+
+  <!-- ---------------- Assistant tab ---------------- -->
+  <section id="assistant" class="tabpane active">
+    <div id="chat" class="chat"></div>
+
+    <div id="draft-panel" class="draft-panel" hidden>
+      <span class="draft-ready"></span>
+      <a id="draft-download" class="btn primary" href="#" download>⬇️ Download Word (.docx)</a>
+      <span class="draft-hint">Also pinned at the top of the 📄 SOP Library, with full formatting.</span>
+    </div>
+
+    <form id="chat-form" class="composer">
+      <input id="chat-input" type="text" autocomplete="off"
+             placeholder="Ask a question, or say “draft an SOP about …”" />
+      <button id="send-btn" type="submit" class="btn primary">Send</button>
+    </form>
+  </section>
+
+  <!-- ---------------- Library tab ---------------- -->
+  <section id="library" class="tabpane">
+    <div class="library">
+      <aside class="doc-list">
+        <label class="drafts-only">
+          <input type="checkbox" id="drafts-only" /> Show drafts only
+        </label>
+        <ul id="doc-items"></ul>
+      </aside>
+      <div class="doc-view">
+        <div id="doc-view-empty" class="muted">Select a document to preview it.</div>
+        <div id="doc-view-body" hidden>
+          <div id="doc-badge" class="draft-pill" hidden>DRAFT — pending QA</div>
+          <iframe id="doc-frame" title="Document preview"></iframe>
+          <div id="doc-md" class="doc-md" hidden></div>
+          <a id="doc-download" class="btn" href="#" download>⬇️ Download this file</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script src="/static/app.js" defer></script>
+</body>
+</html>

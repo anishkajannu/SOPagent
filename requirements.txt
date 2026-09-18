@@ -12,7 +12,8 @@ pdfplumber
 python-docx
 # Live government-source search (the policy advisor):
 langchain-tavily
-# Web UI:
-streamlit
+# Web API + server (serves the static UI and the streaming chat endpoint):
+fastapi
+uvicorn[standard]
 # Render .docx SOPs as formatted HTML in the Library preview:
 mammoth

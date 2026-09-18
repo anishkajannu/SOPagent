@@ -27,8 +27,9 @@ FastEmbedEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2').embed_q
 # Build the SOP search index from ./sops at build time.
 RUN python ingest.py
 
-EXPOSE 8501
+EXPOSE 8000
 
-# Streamlit must listen on 0.0.0.0 to be reachable from outside the container.
-CMD ["streamlit", "run", "app.py", \
-     "--server.address=0.0.0.0", "--server.port=8501", "--server.headless=true"]
+# FastAPI via uvicorn. Render provides $PORT; default 8000 for local runs.
+# Serving the static UI does NOT import the agent, so the page loads instantly
+# and the AI stack initializes only on the first /api/chat request.
+CMD ["sh", "-c", "uvicorn server:app --host 0.0.0.0 --port ${PORT:-8000}"]
