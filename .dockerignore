@@ -1,0 +1,20 @@
+# Virtual environments (Mac-specific, huge — never ship these)
+.venv
+.ven
+# Caches / build junk
+__pycache__
+**/__pycache__
+*.pyc
+.DS_Store
+**/.DS_Store
+.git
+# Indexes are rebuilt inside the image
+chroma_sops
+chroma_gov
+# Temp / cleanup folders
+_stage
+_to_delete
+# Duplicate source archives — the .md files at sops/ root already cover these,
+# so leaving them out keeps the image small without changing the index.
+sops/Doc Control
+sops/QMS-Doc Control

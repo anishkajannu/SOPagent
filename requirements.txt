@@ -1,0 +1,15 @@
+langchain
+langchain-anthropic
+langchain-chroma
+langchain-huggingface
+langchain-text-splitters
+langchain-core
+sentence-transformers
+chromadb
+# Reading Word and PDF SOPs during ingest:
+pdfplumber
+python-docx
+# Live government-source search (the policy advisor):
+langchain-tavily
+# Web UI:
+streamlit
