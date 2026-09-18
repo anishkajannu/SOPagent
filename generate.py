@@ -137,7 +137,9 @@ def generate_sop(
     draft = draft_sections(topic, doc_number, context)
 
     title = _clean_title(draft["title"].strip())
-    path = sops_dir / f"{doc_number} {title}.docx"
+    # Sanitize for use as a filename: '/', ':' etc. would break the path.
+    safe_title = re.sub(r'[\\/:*?"<>|]+', "-", title).strip(" .-") or doc_number
+    path = sops_dir / f"{doc_number} {safe_title}.docx"
     # base_dir is the project root (parent of ./sops) so the logo is found
     build_sop_docx(doc_number, draft, str(path), base_dir=str(sops_dir.parent))
     return {"doc_number": doc_number, "title": title, "path": str(path)}
