@@ -9,6 +9,7 @@ Right tab = browse and read every SOP with its real Word formatting, and any
 """
 
 import base64
+import html
 import re
 from pathlib import Path
 
@@ -19,6 +20,7 @@ import streamlit.components.v1 as components
 # Importing main builds the agent, embeddings and vector store once.
 from main import agent
 from ingest import extract_text
+from gov import ALLOWED_DOMAINS  # official domains -> style those citations
 
 SOPS_DIR = Path("./sops")
 DRAFT_MARKER = "pending QA approval"
@@ -34,6 +36,57 @@ _FNAME_RE = re.compile(r"^((?:SOP|WIN|MAN|QM|POL|FRM|TMP|NM)-\d{3})\s+(.*)$", re
 _HEADING_RE = re.compile(r"^\d+\s+[A-Z][A-Z /&]+$")
 _HEADING_WORDS = {"REFERENCES", "DEFINITIONS", "RESPONSIBILITIES", "PROCEDURE",
                   "PURPOSE", "SCOPE", "ATTACHMENTS", "REVISION HISTORY", "SIGNATURE PAGE"}
+
+# ---- Citation styling: green pills for Netramind SOPs, blue for official sources ----
+_MD_LINK = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
+_RAW_URL = re.compile(r"https?://[^\s<>()]+")
+_CITE_DOCNUM = re.compile(r"\b((?:SOP|WIN|MAN|QM|POL|FRM|TMP|NM)-\d{3}(?:-\d{2})?)\b")
+
+_SOP_PILL = ("background:#e6f4ea;color:#137333;border:1px solid #b7e1c4;border-radius:10px;"
+             "padding:1px 7px;font-weight:600;font-size:.82em;white-space:nowrap;")
+_GOV_PILL = ("background:#e8f0fe;color:#1a56db;border:1px solid #c3d6fb;border-radius:10px;"
+             "padding:1px 7px;font-weight:600;font-size:.82em;text-decoration:none;white-space:nowrap;")
+
+
+def _host(url: str) -> str:
+    return re.sub(r"^https?://(www\.)?", "", url).split("/")[0].lower()
+
+
+def _is_gov(url: str) -> bool:
+    h = _host(url)
+    return any(h == d or h.endswith("." + d) for d in ALLOWED_DOMAINS)
+
+
+def style_citations(text: str) -> str:
+    """Turn SOP numbers into green pills and official-source links into blue pills."""
+    stash: list[str] = []
+
+    def keep(frag: str) -> str:
+        stash.append(frag)
+        return f"\x00{len(stash) - 1}\x00"   # park finished HTML so later passes skip it
+
+    def md(m: re.Match) -> str:
+        label, url = m.group(1), m.group(2)
+        if _is_gov(url):
+            return keep(f'<a href="{url}" target="_blank" style="{_GOV_PILL}">🏛️ {html.escape(label)}</a>')
+        return m.group(0)  # leave non-official links to normal markdown
+    text = _MD_LINK.sub(md, text)
+
+    def raw(m: re.Match) -> str:
+        url, trail = m.group(0), ""
+        while url and url[-1] in ".,;:]}'\")":   # don't swallow trailing punctuation
+            trail = url[-1] + trail
+            url = url[:-1]
+        if _is_gov(url):
+            return keep(f'<a href="{url}" target="_blank" style="{_GOV_PILL}">🏛️ {_host(url)}</a>') + trail
+        return m.group(0)
+    text = _RAW_URL.sub(raw, text)
+
+    text = _CITE_DOCNUM.sub(lambda m: keep(f'<span style="{_SOP_PILL}">📘 {m.group(1)}</span>'), text)
+
+    for i, frag in enumerate(stash):
+        text = text.replace(f"\x00{i}\x00", frag)
+    return text
 
 st.set_page_config(page_title="Netramind SOP Assistant", page_icon="📘", layout="wide")
 
@@ -169,7 +222,10 @@ with chat_tab:
 
     for role, text in st.session_state.shown:
         with st.chat_message(role):
-            st.markdown(text)
+            if role == "assistant":
+                st.markdown(style_citations(text), unsafe_allow_html=True)
+            else:
+                st.markdown(text)
 
     prompt = st.chat_input("Ask a question, or say “draft an SOP about …”")
     if prompt:
@@ -185,7 +241,7 @@ with chat_tab:
                 st.session_state.lc_messages = response["messages"]
                 last = st.session_state.lc_messages[-1]
                 answer = getattr(last, "text", None) or getattr(last, "content", "")
-            st.markdown(answer)
+            st.markdown(style_citations(answer), unsafe_allow_html=True)
         st.session_state.shown.append(("assistant", answer))
 
         new = sorted(_newest_docx_set() - before)
