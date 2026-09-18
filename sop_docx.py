@@ -115,19 +115,19 @@ def _build_header(section, doc_number, title, version, effective, logo):
     outer = header.add_table(rows=1, cols=2, width=Inches(6.5))
     outer.autofit = False
     logo_cell, meta_cell = outer.rows[0].cells
-    logo_cell.width = Inches(2.3); meta_cell.width = Inches(4.2)
+    logo_cell.width = Inches(2.7); meta_cell.width = Inches(3.8)
     logo_cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER  # center against the table
 
     lp = logo_cell.paragraphs[0]
     if logo is not None:
-        lp.add_run().add_picture(str(logo), width=Inches(2.4))
+        lp.add_run().add_picture(str(logo), width=Inches(2.4))  # fits inside the 2.7" cell
     else:
         _add_run(lp, "NetraMind", bold=True, size=16, color=RGBColor(0x1A, 0x56, 0xDB))
 
     meta = meta_cell.add_table(rows=5, cols=2)
     meta.autofit = False
     for row in meta.rows:
-        row.cells[0].width = Inches(1.6); row.cells[1].width = Inches(2.5)
+        row.cells[0].width = Inches(1.5); row.cells[1].width = Inches(2.3)  # 3.8" total, fits meta_cell
     _set_table_borders(meta)
     meta.rows[0].cells[0].merge(meta.rows[0].cells[1])
     _cell_text(meta.rows[0].cells[0], "STANDARD OPERATING PROCEDURE",
