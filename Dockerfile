@@ -7,6 +7,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 \
 
 WORKDIR /app
 
+# Keep ONNX / BLAS thread pools to one — fewer memory arenas for the embedding
+# model on a small instance (and no downside on a low-CPU tier).
+ENV OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    TOKENIZERS_PARALLELISM=false
+
 # Install Python dependencies first (cached unless requirements.txt changes).
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

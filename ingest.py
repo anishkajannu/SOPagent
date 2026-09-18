@@ -36,6 +36,36 @@ READABLE_EXTENSIONS = {".md", ".docx", ".pdf"}
 SKIP_TYPES = {"FRM", "TMP"}                 # forms and templates: blank, not content
 EXT_PREFERENCE = {".md": 0, ".pdf": 1, ".docx": 2}  # tiebreak when mtimes are equal
 
+MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+COLLECTION = "netramind_sops"
+CHROMA_DIR = "./chroma_sops"
+
+# --- Shared singletons: load the embedding model and open the store ONCE per process.
+# Previously main.py, generate.py and ingest.py each built their own FastEmbed model,
+# so drafting an SOP briefly held two full models in RAM. These keep it to one.
+_EMBEDDINGS = None
+_SOP_STORE = None
+
+
+def get_embeddings():
+    """The one shared FastEmbed model for the whole process (loaded lazily, once)."""
+    global _EMBEDDINGS
+    if _EMBEDDINGS is None:
+        _EMBEDDINGS = FastEmbedEmbeddings(model_name=MODEL_NAME)
+    return _EMBEDDINGS
+
+
+def get_sop_store():
+    """The one shared Chroma handle to the SOP collection (loaded lazily, once)."""
+    global _SOP_STORE
+    if _SOP_STORE is None:
+        _SOP_STORE = Chroma(
+            collection_name=COLLECTION,
+            embedding_function=get_embeddings(),
+            persist_directory=CHROMA_DIR,
+        )
+    return _SOP_STORE
+
 # Header/footer boilerplate to strip from extracted Word/PDF text.
 _BOILER = [
     r"^Zoho Sign Document ID", r"^STANDARD OPERATING PROCEDURE$", r"^WORK INSTRUCTION$",
@@ -134,13 +164,7 @@ def main() -> None:
     chunks = splitter.split_documents(docs)
     ids = build_stable_ids(chunks)
 
-    embeddings = FastEmbedEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    sop_store = Chroma(
-        collection_name="netramind_sops",
-        embedding_function=embeddings,
-        persist_directory="./chroma_sops",
-    )
-    sop_store.add_documents(chunks, ids=ids)
+    get_sop_store().add_documents(chunks, ids=ids)
     print(f"Indexed {len(chunks)} chunks from {len(docs)} documents into ./chroma_sops")
     for d in docs:
         print(f"  {d.metadata['doc_number']:16} {d.metadata['source_file']}")

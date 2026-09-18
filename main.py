@@ -3,32 +3,18 @@ from pathlib import Path
 
 from langchain.agents import create_agent
 from langchain.tools import tool
-from langchain_chroma import Chroma
-from langchain_community.embeddings import FastEmbedEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from generate import generate_sop
 from gov import search_government_policy
-from ingest import load_doc, build_stable_ids
-
-
-embeddings = FastEmbedEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
-)
-
-
-sop_store = Chroma(
-    collection_name="netramind_sops",
-    embedding_function=embeddings,
-    persist_directory="./chroma_sops",
-)
+from ingest import load_doc, build_stable_ids, get_sop_store
 
 
 @tool
 def search_sops(query: str) -> str:
     """Search internal Netramind SOPs for information relevant to a user's question."""
 
-    hits = sop_store.similarity_search(query, k=3)
+    hits = get_sop_store().similarity_search(query, k=3)
 
     if not hits:
         return "No matching SOP information was found."
@@ -56,7 +42,7 @@ def _index_file(path: Path) -> None:
         chunk_overlap=120,
     )
     chunks = splitter.split_documents([doc])
-    sop_store.add_documents(chunks, ids=build_stable_ids(chunks))
+    get_sop_store().add_documents(chunks, ids=build_stable_ids(chunks))
 
 
 @tool
@@ -122,8 +108,10 @@ agent = create_agent(
         "- When the user asks to create, generate, or draft a new SOP, use the "
         "draft_sop tool. The document number is assigned automatically (e.g. "
         "SOP-033), so you do not need department or category codes — just draft it "
-        "from the topic. Remind the user that generated SOPs are drafts that still "
-        "require author and QA review and approval before use.\n"
+        "from the topic. After drafting, keep your reply short: state in one line "
+        "that it is a draft only (needs author and QA review/approval signature), "
+        "then ask if they would like to add or improve any specific sections. Do "
+        "NOT list the document number, indexing status, or any other notes.\n"
         "- If you do not have the answer from a tool, say so rather than guessing."
     ),
 )

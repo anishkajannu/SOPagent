@@ -21,6 +21,7 @@ import streamlit.components.v1 as components
 from main import agent
 from ingest import extract_text
 from gov import ALLOWED_DOMAINS  # official domains -> style those citations
+from langchain_core.messages import AIMessageChunk  # for token streaming
 
 SOPS_DIR = Path("./sops")
 DRAFT_MARKER = "pending QA approval"
@@ -88,6 +89,26 @@ def style_citations(text: str) -> str:
         text = text.replace(f"\x00{i}\x00", frag)
     return text
 
+
+def _chunk_text(msg) -> str:
+    """Extract just the assistant's visible text from a streamed message chunk.
+
+    Anthropic returns content as a list of blocks; we keep the 'text' blocks and
+    ignore tool-call blocks, so tool planning / arguments don't leak into the chat.
+    """
+    content = getattr(msg, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts = []
+        for b in content:
+            if isinstance(b, dict) and b.get("type") == "text":
+                parts.append(b.get("text", ""))
+            elif isinstance(b, str):
+                parts.append(b)
+        return "".join(parts)
+    return ""
+
 st.set_page_config(page_title="Netramind SOP Assistant", page_icon="📘", layout="wide")
 
 st.markdown(
@@ -114,7 +135,7 @@ def _mime(path: Path) -> str:
     }.get(path.suffix.lower(), "text/markdown")
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
 def _logo_data_uri() -> str:
     """The NetraMind logo as a data: URI so the preview header shows it inline."""
     if not LOGO_PATH.exists():
@@ -123,13 +144,13 @@ def _logo_data_uri() -> str:
     return f"data:image/png;base64,{b64}"
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
 def doc_text(path_str: str, mtime: float) -> str:
     """Plain text of a document (used for the draft check and search)."""
     return extract_text(Path(path_str))
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
 def doc_markdown(path_str: str, mtime: float) -> str:
     """A readable Markdown rendering for .md and .pdf (the .docx path uses HTML)."""
     path = Path(path_str)
@@ -164,7 +185,7 @@ def _doc_header(path: Path) -> str:
     )
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False, max_entries=64)
 def doc_html(path_str: str, mtime: float) -> str:
     """Full-fidelity HTML for a .docx: real headings, underlines, tables, red refs."""
     path = Path(path_str)
@@ -236,12 +257,30 @@ with chat_tab:
         before = _newest_docx_set()  # snapshot so we can spot a freshly drafted SOP
         st.session_state.lc_messages.append({"role": "user", "content": prompt})
         with st.chat_message("assistant"):
-            with st.spinner("Working…"):
-                response = agent.invoke({"messages": st.session_state.lc_messages})
-                st.session_state.lc_messages = response["messages"]
-                last = st.session_state.lc_messages[-1]
-                answer = getattr(last, "text", None) or getattr(last, "content", "")
-            st.markdown(style_citations(answer), unsafe_allow_html=True)
+            placeholder = st.empty()
+            placeholder.markdown("_Working…_")
+            answer = ""
+            final_state = None
+            # Stream tokens as the model writes them; also capture the final graph
+            # state so history (incl. tool calls) carries forward correctly.
+            for mode, chunk in agent.stream(
+                {"messages": st.session_state.lc_messages},
+                stream_mode=["messages", "values"],
+            ):
+                if mode == "messages":
+                    msg, _meta = chunk
+                    if isinstance(msg, AIMessageChunk):
+                        piece = _chunk_text(msg)
+                        if piece:
+                            answer += piece
+                            placeholder.markdown(answer + " ▌")  # live typing cursor
+                elif mode == "values":
+                    final_state = chunk  # the last one is the finished state
+
+            placeholder.markdown(style_citations(answer), unsafe_allow_html=True)
+
+        if final_state and final_state.get("messages"):
+            st.session_state.lc_messages = final_state["messages"]
         st.session_state.shown.append(("assistant", answer))
 
         new = sorted(_newest_docx_set() - before)
