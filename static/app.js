@@ -365,16 +365,29 @@ async function showDoc(d) {
   document.getElementById("doc-badge").hidden = !d.is_draft;
   document.getElementById("doc-download").href = "/api/sops/download?name=" + encodeURIComponent(d.name);
 
-  const frame = document.getElementById("doc-frame");
+  const render = document.getElementById("doc-render");
   const md = document.getElementById("doc-md");
-  try {
-    const res = await (await fetch("/api/sops/preview?name=" + encodeURIComponent(d.name))).json();
-    if (res.type === "html") {
-      md.hidden = true; frame.hidden = false; frame.srcdoc = res.html;
-    } else {
-      frame.hidden = true; md.hidden = false; renderMarkdown(md, res.text);
+  if (d.suffix === "docx" && window.docx) {
+    // Render the ACTUAL Word document in the browser (real tables, header, styling).
+    md.hidden = true; render.hidden = false;
+    render.innerHTML = "<div class='muted' style='padding:20px'>Loading…</div>";
+    try {
+      const blob = await (await fetch("/api/sops/download?name=" + encodeURIComponent(d.name))).blob();
+      render.innerHTML = "";
+      await window.docx.renderAsync(blob, render, null, {
+        inWrapper: true, ignoreLastRenderedPageBreak: true,
+      });
+    } catch (e) {
+      render.innerHTML = "<div class='muted' style='padding:20px'>Could not render this document.</div>";
     }
-  } catch (e) {
-    frame.hidden = true; md.hidden = false; md.textContent = "Could not load preview.";
+  } else {
+    // .md / .pdf fall back to the text preview.
+    render.hidden = true; md.hidden = false;
+    try {
+      const res = await (await fetch("/api/sops/preview?name=" + encodeURIComponent(d.name))).json();
+      renderMarkdown(md, res.text || "");
+    } catch (e) {
+      md.textContent = "Could not load preview.";
+    }
   }
 }

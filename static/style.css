@@ -119,7 +119,15 @@ body {
 #doc-items li .suffix { color: var(--muted); font-size: .8rem; }
 
 .doc-view { flex: 1; min-width: 0; }
-#doc-frame { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.docx-render {
+  height: 760px; overflow-y: auto; border: 1px solid var(--line); border-radius: 10px;
+  background: #eef0f4;
+}
+/* docx-preview page chrome: give the "pages" a subtle shadow, tidy spacing */
+.docx-render .docx-wrapper { background: #eef0f4; padding: 18px 0; }
+.docx-render .docx-wrapper > section.docx {
+  box-shadow: 0 1px 6px rgba(0,0,0,.18); margin-bottom: 18px; background: #fff;
+}
 .doc-md {
   background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px 26px;
   max-height: 760px; overflow-y: auto; line-height: 1.5;

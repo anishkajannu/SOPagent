@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Netramind SOP Assistant</title>
   <link rel="stylesheet" href="/static/style.css" />
-  <!-- Markdown rendering for assistant answers (vendored locally — no external CDN,
-       so it works on locked-down networks) -->
-  <script src="/static/marked.min.js" defer></script>
+  <!-- Vendored locally (no external CDN, works on locked-down networks) -->
+  <script src="/static/marked.min.js" defer></script>          <!-- assistant markdown -->
+  <script src="/static/jszip.min.js" defer></script>           <!-- docx-preview dependency -->
+  <script src="/static/docx-preview.min.js" defer></script>    <!-- render .docx like Word -->
 </head>
 <body>
   <header class="topbar">
@@ -45,7 +46,7 @@
         <div id="doc-view-empty" class="muted">Select a document to preview it.</div>
         <div id="doc-view-body" hidden>
           <div id="doc-badge" class="draft-pill" hidden>DRAFT — pending QA</div>
-          <iframe id="doc-frame" title="Document preview"></iframe>
+          <div id="doc-render" class="docx-render"></div>
           <div id="doc-md" class="doc-md" hidden></div>
           <a id="doc-download" class="btn" href="#" download>⬇️ Download this file</a>
         </div>
