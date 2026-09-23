@@ -1,33 +1,33 @@
 {
-  "rebuilt_at": "2026-09-22T23:42:53-04:00",
+  "rebuilt_at": "2026-09-23T09:47:57-04:00",
   "document_count": 37,
-  "chunk_count": 647,
+  "chunk_count": 661,
   "chunks_removed": 647,
   "documents": [
     {
       "doc_number": "MAN-018-01",
       "title": "NORC Portal User Guide",
-      "source_file": "MAN-018-01 NORC Portal User Guide.md"
+      "source_file": "MAN-018-01 NORC Portal User Guide.docx"
     },
     {
       "doc_number": "MAN-018-02",
       "title": "Heidelberg SD-OCT Image Acquisition and File Export Manual - OCU410-301",
-      "source_file": "MAN-018-02 Heidelberg SD-OCT Image Acquisition and File Export Manual - OCU410-301.md"
+      "source_file": "MAN-018-02 Heidelberg SD-OCT Image Acquisition and File Export Manual - OCU410-301.docx"
     },
     {
       "doc_number": "NM-OPS-DAT-002-v1.0",
       "title": "Customer Data Backup Procedure",
-      "source_file": "NM-OPS-DAT-002-v1.0 Customer Data Backup Procedure.md"
+      "source_file": "NM-OPS-DAT-002-v1.0 Customer Data Backup Procedure.docx"
     },
     {
       "doc_number": "NM-QA-SAF-001-v1.0",
       "title": "Lockout Tagout Procedure",
-      "source_file": "NM-QA-SAF-001-v1.0 Lockout Tagout Procedure.md"
+      "source_file": "NM-QA-SAF-001-v1.0 Lockout Tagout Procedure.docx"
     },
     {
       "doc_number": "QM-001",
       "title": "Quality Manual",
-      "source_file": "QM-001 Quality Manual.md"
+      "source_file": "QM-001 Quality Manual.docx"
     },
     {
       "doc_number": "SOP-001",
@@ -37,147 +37,147 @@
     {
       "doc_number": "SOP-002",
       "title": "Good Documentation Practices",
-      "source_file": "SOP-002 Good Documentation Practices.md"
+      "source_file": "SOP-002 Good Documentation Practices.docx"
     },
     {
       "doc_number": "SOP-003",
       "title": "GxP Training Program and Curricula",
-      "source_file": "SOP-003 GxP Training Program and Curricula.md"
+      "source_file": "SOP-003 GxP Training Program and Curricula.docx"
     },
     {
       "doc_number": "SOP-004",
       "title": "GxP Records Retention",
-      "source_file": "SOP-004 GxP Records Retention.md"
+      "source_file": "SOP-004 GxP Records Retention.docx"
     },
     {
       "doc_number": "SOP-005",
       "title": "Management Review Meetings",
-      "source_file": "SOP-005 Management Review Meetings.md"
+      "source_file": "SOP-005 Management Review Meetings.docx"
     },
     {
       "doc_number": "SOP-006",
       "title": "Deviation Management",
-      "source_file": "SOP-006 Deviation Management.md"
+      "source_file": "SOP-006 Deviation Management.docx"
     },
     {
       "doc_number": "SOP-007",
       "title": "Corrective and Preventative Action (CAPA) Management",
-      "source_file": "SOP-007 Corrective and Preventative Action (CAPA) Management.md"
+      "source_file": "SOP-007 Corrective and Preventative Action (CAPA) Management.docx"
     },
     {
       "doc_number": "SOP-008",
       "title": "Incident Management",
-      "source_file": "SOP-008 Incident Management.md"
+      "source_file": "SOP-008 Incident Management.docx"
     },
     {
       "doc_number": "SOP-009",
       "title": "Internal Audit",
-      "source_file": "SOP-009 Internal Audit.md"
+      "source_file": "SOP-009 Internal Audit.docx"
     },
     {
       "doc_number": "SOP-010",
       "title": "Software Development Lifecycle",
-      "source_file": "SOP-010 Software Development Lifecycle.md"
+      "source_file": "SOP-010 Software Development Lifecycle.docx"
     },
     {
       "doc_number": "SOP-011",
       "title": "Configuration Management",
-      "source_file": "SOP-011 Configuration Management.md"
+      "source_file": "SOP-011 Configuration Management.docx"
     },
     {
       "doc_number": "SOP-012",
       "title": "IT Change Control",
-      "source_file": "SOP-012 IT Change Control.md"
+      "source_file": "SOP-012 IT Change Control.docx"
     },
     {
       "doc_number": "SOP-013",
       "title": "Computer System Validation",
-      "source_file": "SOP-013 Computer System Validation.md"
+      "source_file": "SOP-013 Computer System Validation.docx"
     },
     {
       "doc_number": "SOP-014",
       "title": "User Acceptance Testing",
-      "source_file": "SOP-014 User Acceptance Testing.md"
+      "source_file": "SOP-014 User Acceptance Testing.docx"
     },
     {
       "doc_number": "SOP-015",
       "title": "21 CFR Part 11",
-      "source_file": "SOP-015 21 CFR Part 11.md"
+      "source_file": "SOP-015 21 CFR Part 11.docx"
     },
     {
       "doc_number": "SOP-016",
       "title": "Data Integrity",
-      "source_file": "SOP-016 Data Integrity.md"
+      "source_file": "SOP-016 Data Integrity.docx"
     },
     {
       "doc_number": "SOP-017",
       "title": "Audit Trail Review",
-      "source_file": "SOP-017 Audit Trail Review.md"
+      "source_file": "SOP-017 Audit Trail Review.docx"
     },
     {
       "doc_number": "SOP-018",
       "title": "Clinical Data Transfers",
-      "source_file": "SOP-018 Clinical Data Transfers.md"
+      "source_file": "SOP-018 Clinical Data Transfers.docx"
     },
     {
       "doc_number": "SOP-019",
       "title": "User Access Management",
-      "source_file": "SOP-019 User Access Management.md"
+      "source_file": "SOP-019 User Access Management.docx"
     },
     {
       "doc_number": "SOP-020",
       "title": "IT Security",
-      "source_file": "SOP-020 IT Security.md"
+      "source_file": "SOP-020 IT Security.docx"
     },
     {
       "doc_number": "SOP-021",
       "title": "IT System Adminstration and Maintenance",
-      "source_file": "SOP-021 IT System Adminstration and Maintenance.md"
+      "source_file": "SOP-021 IT System Adminstration and Maintenance.docx"
     },
     {
       "doc_number": "SOP-022",
       "title": "IT Network Management",
-      "source_file": "SOP-022 IT Network Management.md"
+      "source_file": "SOP-022 IT Network Management.docx"
     },
     {
       "doc_number": "SOP-023",
       "title": "IT Disaster Recovery",
-      "source_file": "SOP-023 IT Disaster Recovery.md"
+      "source_file": "SOP-023 IT Disaster Recovery.docx"
     },
     {
       "doc_number": "SOP-024",
       "title": "Business Continuity Planning",
-      "source_file": "SOP-024 Business Continuity Planning.md"
+      "source_file": "SOP-024 Business Continuity Planning.docx"
     },
     {
       "doc_number": "SOP-025",
       "title": "Periodic Review of IT Processes",
-      "source_file": "SOP-025 Periodic Review of IT Processes.md"
+      "source_file": "SOP-025 Periodic Review of IT Processes.docx"
     },
     {
       "doc_number": "SOP-026",
       "title": "Contract Service Provider Selection and Qualification",
-      "source_file": "SOP-026 Contract Service Provider Selection and Qualification.md"
+      "source_file": "SOP-026 Contract Service Provider Selection and Qualification.docx"
     },
     {
       "doc_number": "SOP-027",
       "title": "Regulatory Agency Inspections",
-      "source_file": "SOP-027 Regulatory Agency Inspections.md"
+      "source_file": "SOP-027 Regulatory Agency Inspections.docx"
     },
     {
       "doc_number": "SOP-028",
       "title": "Regulatory Intelligence",
-      "source_file": "SOP-028 Regulatory Intelligence.md"
+      "source_file": "SOP-028 Regulatory Intelligence.docx"
     },
     {
       "doc_number": "SOP-029",
       "title": "Potential Fraud and Serious Misconduct",
-      "source_file": "SOP-029 Potential Fraud and Serious Misconduct.md"
+      "source_file": "SOP-029 Potential Fraud and Serious Misconduct.docx"
     },
     {
       "doc_number": "SOP-030",
       "title": "Risk Management",
-      "source_file": "SOP-030 Risk Management.md"
+      "source_file": "SOP-030 Risk Management.docx"
     },
     {
       "doc_number": "SOP-034",

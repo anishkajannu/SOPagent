@@ -367,9 +367,14 @@ async function showDoc(d) {
 
   const render = document.getElementById("doc-render");
   const md = document.getElementById("doc-md");
-  if (d.suffix === "docx" && window.docx) {
+  if (d.suffix === "docx") {
     // Render the ACTUAL Word document in the browser (real tables, header, styling).
     md.hidden = true; render.hidden = false;
+    if (!window.docx) {
+      render.innerHTML = "<div class='muted' style='padding:20px'>Preview library didn't load — "
+        + "please hard-refresh the page (⌘⇧R / Ctrl+Shift+R).</div>";
+      return;
+    }
     render.innerHTML = "<div class='muted' style='padding:20px'>Loading…</div>";
     try {
       const blob = await (await fetch("/api/sops/download?name=" + encodeURIComponent(d.name))).blob();

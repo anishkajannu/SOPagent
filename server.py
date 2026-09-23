@@ -52,6 +52,16 @@ _HEADING_WORDS = {"REFERENCES", "DEFINITIONS", "RESPONSIBILITIES", "PROCEDURE",
 
 app = FastAPI(title="Netramind SOP Assistant")
 
+
+@app.middleware("http")
+async def _no_cache(request, call_next):
+    """Don't let the browser cache the UI, so edits always take effect on refresh
+    (avoids stale index.html/app.js mismatches)."""
+    resp = await call_next(request)
+    resp.headers["Cache-Control"] = "no-cache, no-store, max-age=0"
+    return resp
+
+
 # In-process conversation memory, keyed by a session id the browser generates.
 # Lost on restart (same as the old Streamlit session) — fine for this use.
 _SESSIONS: dict[str, list] = {}
