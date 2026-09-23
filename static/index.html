@@ -18,6 +18,7 @@
   <nav class="tabs">
     <button class="tab active" data-tab="assistant">💬 Assistant</button>
     <button class="tab" data-tab="library">📄 SOP Library</button>
+    <button class="tab" data-tab="manage">🔧 Manage</button>
   </nav>
 
   <!-- ---------------- Assistant tab ---------------- -->
@@ -48,6 +49,39 @@
           <div id="doc-md" class="doc-md" hidden></div>
           <a id="doc-download" class="btn" href="#" download>⬇️ Download this file</a>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------------- Manage tab ---------------- -->
+  <section id="manage" class="tabpane">
+    <div class="manage">
+      <div class="manage-card">
+        <h3>1 · Upload updated SOPs</h3>
+        <p class="muted-sm">Add new or changed <code>.docx</code>, <code>.pdf</code> or <code>.md</code> files.
+          A file with the same name replaces the old version.</p>
+        <div class="upload-row">
+          <input type="file" id="upload-input" multiple accept=".docx,.pdf,.md" />
+          <button class="btn primary" id="upload-btn">Upload</button>
+        </div>
+        <div id="upload-status" class="status-line"></div>
+      </div>
+
+      <div class="manage-card">
+        <h3>2 · Retire obsolete SOPs</h3>
+        <p class="muted-sm">Archiving a document stops the assistant from using it. It's moved to
+          <code>sops/_archive</code> — kept on disk for your records, not deleted.</p>
+        <ul id="manage-doc-items" class="manage-list"></ul>
+      </div>
+
+      <div class="manage-card highlight">
+        <h3>3 · Rebuild the index</h3>
+        <p class="muted-sm">Applies your changes. This wipes the search index and re-reads only the
+          current SOPs, so anything you removed can no longer be recalled. Run this after uploading
+          or archiving.</p>
+        <button class="btn primary big" id="rebuild-btn">🔄 Rebuild index now</button>
+        <div id="rebuild-status" class="status-line"></div>
+        <div id="manifest" class="manifest"></div>
       </div>
     </div>
   </section>

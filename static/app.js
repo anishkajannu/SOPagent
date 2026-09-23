@@ -21,6 +21,7 @@ document.querySelectorAll(".tab").forEach((btn) => {
     btn.classList.add("active");
     document.getElementById(btn.dataset.tab).classList.add("active");
     if (btn.dataset.tab === "library") loadLibrary();
+    if (btn.dataset.tab === "manage") loadManage();
   });
 });
 
@@ -223,6 +224,127 @@ function renderDocList() {
     });
     docItemsEl.appendChild(li);
   });
+}
+
+// ---------------- manage tab ----------------
+const uploadInput = document.getElementById("upload-input");
+const uploadBtn = document.getElementById("upload-btn");
+const uploadStatus = document.getElementById("upload-status");
+const manageItems = document.getElementById("manage-doc-items");
+const rebuildBtn = document.getElementById("rebuild-btn");
+const rebuildStatus = document.getElementById("rebuild-status");
+const manifestEl = document.getElementById("manifest");
+
+function loadManage() {
+  loadManageList();
+  loadManifest();
+}
+
+async function loadManageList() {
+  try {
+    const data = await (await fetch("/api/sops")).json();
+    const docs = (data.documents || []);
+    manageItems.innerHTML = "";
+    if (!docs.length) { manageItems.innerHTML = "<li class='muted'>No documents yet.</li>"; return; }
+    docs.forEach((d) => {
+      const li = document.createElement("li");
+      const label = document.createElement("span");
+      label.innerHTML = `<strong>${d.doc_number || ""}</strong> ${escapeHtml(d.title)} `
+                      + `<span class="suffix">· ${d.suffix}</span>`;
+      const btn = document.createElement("button");
+      btn.className = "archive-btn";
+      btn.textContent = "Archive";
+      btn.addEventListener("click", () => archiveDoc(d.name, li));
+      li.appendChild(label); li.appendChild(btn);
+      manageItems.appendChild(li);
+    });
+  } catch (e) {
+    manageItems.innerHTML = "<li class='muted'>Could not load documents.</li>";
+  }
+}
+
+async function archiveDoc(name, li) {
+  if (!confirm(`Archive "${name}"?\n\nIt will be moved out of the active set. Remember to Rebuild afterwards.`)) return;
+  try {
+    const r = await fetch("/api/sops/archive", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    if (!r.ok) throw new Error("Archive failed");
+    li.remove();
+    rebuildStatus.className = "status-line";
+    rebuildStatus.textContent = "Archived. Click “Rebuild index now” to apply the change.";
+  } catch (e) {
+    alert("Could not archive: " + e.message);
+  }
+}
+
+uploadBtn.addEventListener("click", async () => {
+  const files = uploadInput.files;
+  if (!files || !files.length) { uploadStatus.textContent = "Choose one or more files first."; return; }
+  const fd = new FormData();
+  for (const f of files) fd.append("files", f);
+  uploadBtn.disabled = true;
+  uploadStatus.className = "status-line";
+  uploadStatus.textContent = "Uploading…";
+  try {
+    const res = await (await fetch("/api/sops/upload", { method: "POST", body: fd })).json();
+    const parts = [];
+    if (res.saved && res.saved.length) parts.push(`Uploaded ${res.saved.length} file(s).`);
+    if (res.skipped && res.skipped.length) parts.push(`Skipped ${res.skipped.length} (unsupported type).`);
+    uploadStatus.className = "status-line ok";
+    uploadStatus.textContent = (parts.join(" ") || "Done.") + "  Now click “Rebuild index now”.";
+    uploadInput.value = "";
+    loadManageList();
+  } catch (e) {
+    uploadStatus.className = "status-line err";
+    uploadStatus.textContent = "Upload failed: " + e.message;
+  } finally {
+    uploadBtn.disabled = false;
+  }
+});
+
+rebuildBtn.addEventListener("click", async () => {
+  rebuildBtn.disabled = true;
+  rebuildStatus.className = "status-line";
+  rebuildStatus.textContent = "Rebuilding… this can take a moment.";
+  manifestEl.innerHTML = "";
+  try {
+    const res = await fetch("/api/rebuild", { method: "POST" });
+    if (!res.ok) {
+      const detail = await res.json().catch(() => ({}));
+      throw new Error(detail.detail || ("HTTP " + res.status));
+    }
+    const m = await res.json();
+    rebuildStatus.className = "status-line ok";
+    rebuildStatus.textContent = `✅ Rebuilt — ${m.document_count} document(s) indexed`
+      + (m.chunks_removed ? `, ${m.chunks_removed} old entries cleared.` : ".");
+    renderManifest(m);
+    loadLibrary();  // library reflects the current set too
+  } catch (e) {
+    rebuildStatus.className = "status-line err";
+    rebuildStatus.textContent = "Rebuild failed: " + e.message;
+  } finally {
+    rebuildBtn.disabled = false;
+  }
+});
+
+async function loadManifest() {
+  try {
+    const m = await (await fetch("/api/manifest")).json();
+    if (m && m.rebuilt_at) renderManifest(m);
+  } catch (e) { /* none yet */ }
+}
+
+function renderManifest(m) {
+  if (!m || !m.documents) { manifestEl.innerHTML = ""; return; }
+  const when = m.rebuilt_at ? new Date(m.rebuilt_at).toLocaleString() : "—";
+  const rows = m.documents.map((d) =>
+    `<li><span class="dnum">${escapeHtml(d.doc_number || "")}</span> ${escapeHtml(d.title || "")}</li>`
+  ).join("");
+  manifestEl.innerHTML =
+    `<div class="manifest-head">Currently indexed: ${m.document_count} document(s) · last rebuilt ${escapeHtml(when)}</div>`
+    + `<ul>${rows}</ul>`;
 }
 
 async function showDoc(d) {

@@ -129,6 +129,42 @@ body {
               font-size: .75rem; font-weight: 600; display: inline-block; margin-bottom: 10px; }
 .muted { color: var(--muted); padding: 40px 0; }
 
+/* ---- manage tab ---- */
+.manage { flex: 1; padding: 20px 24px; max-width: 820px; width: 100%; margin: 0 auto; overflow-y: auto; }
+.manage-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px 20px; margin-bottom: 16px;
+}
+.manage-card.highlight { border-color: var(--blue); background: #f7faff; }
+.manage-card h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.muted-sm { color: var(--muted); font-size: .86rem; margin: 0 0 12px; }
+.muted-sm code { background: #eef0f4; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+.upload-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+#upload-input { font-size: .9rem; }
+.btn.big { padding: 12px 22px; font-size: 1rem; }
+.status-line { margin-top: 10px; font-size: .9rem; color: var(--muted); min-height: 1.2em; }
+.status-line.ok { color: var(--sop-fg); }
+.status-line.err { color: #b3261e; }
+
+.manage-list { list-style: none; margin: 0; padding: 0; max-height: 320px; overflow-y: auto; }
+.manage-list li {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; margin-bottom: 6px; font-size: .9rem;
+}
+.manage-list .archive-btn {
+  border: 1px solid var(--line); background: #fff; color: #b3261e; cursor: pointer;
+  padding: 4px 10px; border-radius: 8px; font-size: .82rem;
+}
+.manage-list .archive-btn:hover { background: #fdecea; border-color: #f0b4ac; }
+
+.manifest { margin-top: 12px; }
+.manifest .manifest-head { font-weight: 600; color: var(--sop-fg); margin-bottom: 8px; }
+.manifest ul { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto;
+               border: 1px solid var(--line); border-radius: 8px; }
+.manifest li { padding: 5px 10px; font-size: .85rem; border-bottom: 1px solid var(--line); }
+.manifest li:last-child { border-bottom: none; }
+.manifest .dnum { font-weight: 600; color: var(--sop-fg); }
+
 @media (max-width: 720px) {
   .library { flex-direction: column; }
   .doc-list { width: 100%; }

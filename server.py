@@ -23,9 +23,11 @@ import base64
 import html as html_lib
 import json
 import re
+import shutil
+import time
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -277,6 +279,67 @@ def preview_sop(name: str = Query(...)):
 def download_sop(name: str = Query(...)):
     path = _safe_doc(name)
     return FileResponse(str(path), filename=path.name)
+
+
+# ---- Manage: upload new/updated SOPs, archive obsolete ones, rebuild the index ----
+UPLOAD_SUFFIXES = {".docx", ".pdf", ".md"}
+
+
+@app.post("/api/sops/upload")
+async def upload_sops(files: list[UploadFile] = File(...)):
+    """Save uploaded SOP files into ./sops on THIS machine (they replace same-named files)."""
+    SOPS_DIR.mkdir(exist_ok=True)
+    saved, skipped = [], []
+    for f in files:
+        name = Path(f.filename or "").name  # strip any path components
+        if not name or Path(name).suffix.lower() not in UPLOAD_SUFFIXES:
+            skipped.append(name or "(unnamed)")
+            continue
+        with open(SOPS_DIR / name, "wb") as out:
+            out.write(await f.read())
+        saved.append(name)
+    return {"saved": saved, "skipped": skipped}
+
+
+class NameReq(BaseModel):
+    name: str
+
+
+@app.post("/api/sops/archive")
+def archive_sop(req: NameReq):
+    """Move a document into ./sops/_archive — kept on disk for records, excluded from the index."""
+    path = _safe_doc(req.name)
+    archive = SOPS_DIR / "_archive"
+    archive.mkdir(exist_ok=True)
+    dest = archive / path.name
+    if dest.exists():  # never clobber an already-archived version
+        dest = archive / f"{path.stem}__{int(time.time())}{path.suffix}"
+    shutil.move(str(path), str(dest))
+    return {"archived": path.name}
+
+
+@app.post("/api/rebuild")
+def rebuild_index():
+    """Clean rebuild: wipe the index and re-index only the current ./sops files.
+    Returns the manifest (what is now indexed + timestamp) for audit evidence."""
+    import ingest  # deferred: pulls in langchain/chroma + the embedding model
+    try:
+        manifest = ingest.rebuild(SOPS_DIR)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Rebuild failed: {e}")
+    return manifest
+
+
+@app.get("/api/manifest")
+def get_manifest():
+    """The most recent rebuild manifest (what the assistant is currently running on)."""
+    p = Path("./index_manifest.json")
+    if p.exists():
+        try:
+            return JSONResponse(json.loads(p.read_text()))
+        except Exception:
+            pass
+    return JSONResponse({"documents": [], "rebuilt_at": None, "document_count": 0})
 
 
 @app.get("/")
