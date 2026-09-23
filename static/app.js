@@ -86,6 +86,13 @@ const formEl = document.getElementById("chat-form");
 const inputEl = document.getElementById("chat-input");
 const sendBtn = document.getElementById("send-btn");
 
+function resetChat() {
+  // Clear the visible conversation and start a fresh server-side session.
+  chatEl.innerHTML = "";
+  SESSION_ID = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2));
+  try { localStorage.setItem("nm_session", SESSION_ID); } catch (e) {}
+}
+
 function addBubble(role) {
   const wrap = document.createElement("div");
   wrap.className = "msg " + role;
@@ -291,6 +298,8 @@ uploadBtn.addEventListener("click", async () => {
     const res = await (await fetch("/api/sops/upload", { method: "POST", body: fd })).json();
     const parts = [];
     if (res.saved && res.saved.length) parts.push(`Uploaded ${res.saved.length} file(s).`);
+    if (res.auto_archived && res.auto_archived.length)
+      parts.push(`Auto-archived ${res.auto_archived.length} old version(s).`);
     if (res.skipped && res.skipped.length) parts.push(`Skipped ${res.skipped.length} (unsupported type).`);
     uploadStatus.className = "status-line ok";
     uploadStatus.textContent = (parts.join(" ") || "Done.") + "  Now click “Rebuild index now”.";
@@ -318,9 +327,12 @@ rebuildBtn.addEventListener("click", async () => {
     const m = await res.json();
     rebuildStatus.className = "status-line ok";
     rebuildStatus.textContent = `✅ Rebuilt — ${m.document_count} document(s) indexed`
-      + (m.chunks_removed ? `, ${m.chunks_removed} old entries cleared.` : ".");
+      + (m.chunks_removed ? `, ${m.chunks_removed} old entries cleared.` : ".")
+      + " Open chats were reset so answers reflect the update.";
     renderManifest(m);
-    loadLibrary();  // library reflects the current set too
+    loadLibrary();     // library reflects the current set too
+    loadManageList();  // archived/updated docs drop out of the list
+    resetChat();       // clear conversation memory so the next question re-retrieves
   } catch (e) {
     rebuildStatus.className = "status-line err";
     rebuildStatus.textContent = "Rebuild failed: " + e.message;

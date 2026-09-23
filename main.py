@@ -1,4 +1,5 @@
 
+import re
 from pathlib import Path
 
 from langchain.agents import create_agent
@@ -9,12 +10,40 @@ from generate import generate_sop
 from gov import search_government_policy
 from ingest import load_doc, build_stable_ids, get_sop_store
 
+# Detect a document number in a question, however it's written: "SOP-001",
+# "SOP 001", "sop1", "MAN-018-02". Normalizes to the canonical "SOP-001" form.
+_QUERY_DOCNUM = re.compile(
+    r"\b(SOP|WIN|MAN|QM|POL|FRM|TMP|NM)[\s\-_]?0*(\d{1,3})(?:-(\d{2}))?\b", re.I)
+
+
+def _wanted_docnum(query: str) -> str | None:
+    m = _QUERY_DOCNUM.search(query)
+    if not m:
+        return None
+    dn = f"{m.group(1).upper()}-{int(m.group(2)):03d}"
+    if m.group(3):
+        dn += f"-{m.group(3)}"
+    return dn
+
 
 @tool
 def search_sops(query: str) -> str:
     """Search internal Netramind SOPs for information relevant to a user's question."""
 
-    hits = get_sop_store().similarity_search(query, k=3)
+    store = get_sop_store()
+
+    # If the question names a specific document (e.g. "scope of SOP-001"), retrieve
+    # from THAT document by metadata — plain semantic search often misses it because
+    # a bare document number is a weak signal in the embedding.
+    dn = _wanted_docnum(query)
+    hits = []
+    if dn:
+        try:
+            hits = store.similarity_search(query, k=6, filter={"doc_number": dn})
+        except Exception:
+            hits = []
+    if not hits:
+        hits = store.similarity_search(query, k=3)
 
     if not hits:
         return "No matching SOP information was found."

@@ -249,10 +249,25 @@ def chat_stream(req: ChatRequest):
     return StreamingResponse(gen(), media_type="application/x-ndjson")
 
 
+# Matches both numbering schemes, incl. a -NN suffix (e.g. MAN-018-02) and the NM scheme.
+_DOCNUM_PREFIX = re.compile(
+    r"^((?:QM|SOP|POL|WIN|MAN|FRM|TMP)-\d{3}(?:-\d{2})?|[A-Z]+-[A-Z]+-[A-Z]+-\d+-v[\d.]+)", re.I)
+
+
+def _doc_number_of(filename: str) -> str | None:
+    m = _DOCNUM_PREFIX.match(Path(filename).stem)
+    return m.group(1).upper() if m else None
+
+
+def _doc_sort_key(p: Path):
+    dn = _doc_number_of(p.name)
+    return (0, dn) if dn else (1, p.name.lower())  # numbered docs first, in order; rest after
+
+
 @app.get("/api/sops")
 def list_sops():
     files = [p for p in SOPS_DIR.glob("*") if p.suffix.lower() in VIEWABLE_SUFFIXES]
-    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    files.sort(key=_doc_sort_key)  # document-number order (SOP-001, SOP-002, …)
     items = []
     for p in files:
         m = _FNAME_RE.match(p.stem)
@@ -285,20 +300,42 @@ def download_sop(name: str = Query(...)):
 UPLOAD_SUFFIXES = {".docx", ".pdf", ".md"}
 
 
+def _archive_move(path: Path) -> Path:
+    """Move a file into ./sops/_archive without clobbering an existing archived copy."""
+    archive = SOPS_DIR / "_archive"
+    archive.mkdir(exist_ok=True)
+    dest = archive / path.name
+    if dest.exists():
+        dest = archive / f"{path.stem}__{int(time.time())}{path.suffix}"
+    shutil.move(str(path), str(dest))
+    return dest
+
+
 @app.post("/api/sops/upload")
 async def upload_sops(files: list[UploadFile] = File(...)):
-    """Save uploaded SOP files into ./sops on THIS machine (they replace same-named files)."""
+    """Save uploaded SOPs into ./sops. Uploading a new version of a document
+    auto-archives any existing file with the SAME document number, so the old
+    version is retired automatically (kept in _archive, excluded from the index)."""
     SOPS_DIR.mkdir(exist_ok=True)
-    saved, skipped = [], []
+    saved, skipped, auto_archived = [], [], []
     for f in files:
         name = Path(f.filename or "").name  # strip any path components
         if not name or Path(name).suffix.lower() not in UPLOAD_SUFFIXES:
             skipped.append(name or "(unnamed)")
             continue
+        # Auto-archive prior versions of the same document (any different filename).
+        dn = _doc_number_of(name)
+        if dn:
+            for existing in list(SOPS_DIR.glob("*")):
+                if (existing.is_file() and existing.name != name
+                        and existing.suffix.lower() in UPLOAD_SUFFIXES
+                        and _doc_number_of(existing.name) == dn):
+                    _archive_move(existing)
+                    auto_archived.append(existing.name)
         with open(SOPS_DIR / name, "wb") as out:
             out.write(await f.read())
         saved.append(name)
-    return {"saved": saved, "skipped": skipped}
+    return {"saved": saved, "skipped": skipped, "auto_archived": auto_archived}
 
 
 class NameReq(BaseModel):
@@ -309,24 +346,21 @@ class NameReq(BaseModel):
 def archive_sop(req: NameReq):
     """Move a document into ./sops/_archive — kept on disk for records, excluded from the index."""
     path = _safe_doc(req.name)
-    archive = SOPS_DIR / "_archive"
-    archive.mkdir(exist_ok=True)
-    dest = archive / path.name
-    if dest.exists():  # never clobber an already-archived version
-        dest = archive / f"{path.stem}__{int(time.time())}{path.suffix}"
-    shutil.move(str(path), str(dest))
+    _archive_move(path)
     return {"archived": path.name}
 
 
 @app.post("/api/rebuild")
 def rebuild_index():
     """Clean rebuild: wipe the index and re-index only the current ./sops files.
+    Also resets open chat sessions so answers reflect the new index immediately.
     Returns the manifest (what is now indexed + timestamp) for audit evidence."""
     import ingest  # deferred: pulls in langchain/chroma + the embedding model
     try:
         manifest = ingest.rebuild(SOPS_DIR)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Rebuild failed: {e}")
+    _SESSIONS.clear()  # drop conversation memory so stale answers aren't re-served
     return manifest
 
 
