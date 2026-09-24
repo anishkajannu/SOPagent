@@ -62,7 +62,9 @@ body {
 .cite-sop {
   background: var(--sop-bg); color: var(--sop-fg); border: 1px solid var(--sop-bd);
   border-radius: 10px; padding: 1px 7px; font-weight: 600; font-size: .82em; white-space: nowrap;
+  text-decoration: none; cursor: pointer;
 }
+a.cite-sop:hover { background: #d3ecd9; border-color: #93cfa9; }
 .cite-gov {
   background: var(--gov-bg); color: var(--gov-fg); border: 1px solid var(--gov-bd);
   border-radius: 10px; padding: 1px 7px; font-weight: 600; font-size: .82em;

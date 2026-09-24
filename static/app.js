@@ -63,10 +63,13 @@ function styleCitations(rootEl) {
     const text = node.nodeValue;
     text.replace(DOCNUM_RE, (match, _g, idx) => {
       if (idx > last) frag.appendChild(document.createTextNode(text.slice(last, idx)));
-      const span = document.createElement("span");
-      span.className = "cite-sop";
-      span.textContent = "📘 " + match;
-      frag.appendChild(span);
+      const el = document.createElement("a");
+      el.className = "cite-sop";
+      el.href = "#";
+      el.dataset.doc = match.toUpperCase();      // e.g. "SOP-017" -> open that doc
+      el.title = "Open " + match + " in the SOP Library";
+      el.textContent = "📘 " + match;
+      frag.appendChild(el);
       last = idx + match.length;
       return match;
     });
@@ -212,6 +215,41 @@ async function loadLibrary() {
 }
 
 draftsOnlyEl.addEventListener("change", renderDocList);
+
+// Clicking a 📘 SOP-xxx pill in a chat answer opens that document in the Library.
+document.addEventListener("click", (e) => {
+  const pill = e.target.closest && e.target.closest(".cite-sop[data-doc]");
+  if (!pill) return;
+  e.preventDefault();
+  openSopByNumber(pill.dataset.doc);
+});
+
+async function openSopByNumber(num) {
+  num = (num || "").toUpperCase();
+  if (!allDocs.length) {
+    try { allDocs = (await (await fetch("/api/sops")).json()).documents || []; } catch (e) {}
+  }
+  const doc = allDocs.find((d) => (d.doc_number || "").toUpperCase() === num)
+           || allDocs.find((d) => d.name.toUpperCase().startsWith(num + " "));
+  if (!doc) {                                  // referenced SOP isn't in the library
+    alert(num + " isn't in the SOP Library (it may be an external reference).");
+    return;
+  }
+  // switch to the Library tab
+  document.querySelectorAll(".tab").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll(".tabpane").forEach((p) => p.classList.remove("active"));
+  document.querySelector('.tab[data-tab="library"]').classList.add("active");
+  document.getElementById("library").classList.add("active");
+  if (draftsOnlyEl.checked && !doc.is_draft) draftsOnlyEl.checked = false;  // make sure it's listed
+  renderDocList();
+  // highlight the matching row and show it
+  const shown = draftsOnlyEl.checked ? allDocs.filter((d) => d.is_draft) : allDocs;
+  const idx = shown.indexOf(doc);
+  const items = document.querySelectorAll("#doc-items li");
+  items.forEach((x) => x.classList.remove("active"));
+  if (items[idx]) { items[idx].classList.add("active"); items[idx].scrollIntoView({ block: "center" }); }
+  showDoc(doc);
+}
 
 function renderDocList() {
   const docs = draftsOnlyEl.checked ? allDocs.filter((d) => d.is_draft) : allDocs;
